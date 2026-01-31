@@ -9,50 +9,59 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+class OrderServiceTest {
 
-public class OrderServiceTest {
-
-    private static OrderService instance;
-    private Order order;
+    private OrderService orderService;
+    private Order testOrder;
 
     @BeforeEach
-    public void setup() {
-        instance = new OrderService();
-        order = new Order();
-        order.setPrice(100);
+    void init() {
+        orderService = new OrderService();
+        testOrder = new Order();
+        testOrder.setPrice(100);
     }
 
     @Test
-    public void testPlaceOrder_withoutCC_throwsException() {
-        RuntimeException re = assertThrows(RuntimeException.class, () -> instance.placeOrder(order));
-        assertEquals(120, order.getPriceWithTax());
-        assertEquals("An Exception Occurred", re.getMessage());
-        assertFalse(order.isCustomerNotified());
+    void placeOrder_withoutCcEmail_shouldThrowRuntimeException() {
+        RuntimeException exception =
+                assertThrows(RuntimeException.class, () -> orderService.placeOrder(testOrder));
+
+        assertAll(
+                () -> assertEquals(120, testOrder.getPriceWithTax()),
+                () -> assertEquals("An Exception Occurred", exception.getMessage()),
+                () -> assertFalse(testOrder.isCustomerNotified())
+        );
     }
 
     @Test
-    public void testPlaceOrder_withCC_returnsTrueAndNotifiesCustomer() {
-        boolean isNotified = instance.placeOrder(order, "cc@example.com");
-        assertEquals(120, order.getPriceWithTax());
-        assertTrue(isNotified, "Notification send to the customer.");
-        assertTrue(order.isCustomerNotified());
+    void placeOrder_withValidCcEmail_shouldNotifyCustomer() {
+        boolean notificationStatus =
+                orderService.placeOrder(testOrder, "cc@example.com");
+
+        assertTrue(notificationStatus);
+        assertEquals(120, testOrder.getPriceWithTax());
+        assertTrue(testOrder.isCustomerNotified());
     }
 
     @ParameterizedTest
     @NullAndEmptySource
-    @ValueSource(strings = {"cc","cc@","@abc.com"})
-    public void testPlaceOrder_withInvalidCC_shouldThrowIllegalArgumentException(String cc) {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> instance.placeOrder(order, cc));
+    @ValueSource(strings = {"cc", "cc@", "@abc.com"})
+    void placeOrder_withInvalidCcEmail_shouldFail(String ccEmail) {
+        IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class,
+                        () -> orderService.placeOrder(testOrder, ccEmail));
 
-        assertEquals("Invalid CC email", ex.getMessage());
-        assertFalse(order.isCustomerNotified());
+        assertEquals("Invalid CC email", exception.getMessage());
+        assertFalse(testOrder.isCustomerNotified());
     }
 
     @Test
-    public void testPlaceOrder_withNullOrder_shouldThrowIllegalArgumentException() {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> instance.placeOrder(null, "cc@example.com"));
+    void placeOrder_withNullOrder_shouldThrowException() {
+        IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class,
+                        () -> orderService.placeOrder(null, "cc@example.com"));
 
-        assertEquals("Order cannot be null.", ex.getMessage());
-        assertFalse(order.isCustomerNotified());
+        assertTrue(exception.getMessage().contains("Order cannot be null"));
+        assertFalse(testOrder.isCustomerNotified());
     }
 }

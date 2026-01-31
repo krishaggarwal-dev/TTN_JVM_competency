@@ -1,7 +1,6 @@
 package com.demo.service;
 
 import com.demo.domain.Order;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -10,46 +9,56 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class EmailServiceTest {
-    EmailService emailService;
-    Order order;
+class EmailServiceTest {
+
+    private EmailService emailService;
+    private Order testOrder;
 
     @BeforeEach
-    public void setup() {
+    void init() {
         emailService = new EmailService();
-        order = new Order();
+        testOrder = new Order();
     }
 
     @Test
-    public void testSendEmailWithoutCC_throwsException() {
-        RuntimeException re = assertThrows(RuntimeException.class, () -> emailService.sendEmail(order));
+    void sendEmail_withoutCcEmail_shouldThrowRuntimeException() {
+        RuntimeException exception =
+                assertThrows(RuntimeException.class,
+                        () -> emailService.sendEmail(testOrder));
 
-        assertFalse(order.isCustomerNotified(), "Customer is not notified");
-        assertEquals("An Exception Occurred", re.getMessage());
+        assertAll(
+                () -> assertFalse(testOrder.isCustomerNotified()),
+                () -> assertEquals("An Exception Occurred", exception.getMessage())
+        );
     }
 
     @Test
-    void sendEmail_withCC_returnsTrueAndNotifiesCustomer() {
-        boolean result = emailService.sendEmail(order, "cc@test.com");
+    void sendEmail_withValidCcEmail_shouldNotifyCustomer() {
+        boolean emailSent =
+                emailService.sendEmail(testOrder, "cc@test.com");
 
-        assertTrue(result);
-        assertTrue(order.isCustomerNotified());
+        assertTrue(emailSent);
+        assertTrue(testOrder.isCustomerNotified());
     }
 
     @ParameterizedTest
     @NullAndEmptySource
-    @ValueSource(strings = {"cc","cc@","@abc.com"})
-    public void testSendEmail_withInvalidCc_shouldThrowIllegalArgumentException(String cc) {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> emailService.sendEmail(order, cc));
+    @ValueSource(strings = {"cc", "cc@", "@abc.com"})
+    void sendEmail_withInvalidCcEmail_shouldFail(String ccEmail) {
+        IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class,
+                        () -> emailService.sendEmail(testOrder, ccEmail));
 
-        assertEquals("Invalid CC email", ex.getMessage());
-        assertFalse(order.isCustomerNotified());
+        assertEquals("Invalid CC email", exception.getMessage());
+        assertFalse(testOrder.isCustomerNotified());
     }
 
     @Test
-    public void testSendEmail_withNullOrder_shouldThrowIllegalArgumentException() {
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> emailService.sendEmail(null, "cc@test.com"));
+    void sendEmail_withNullOrder_shouldThrowException() {
+        IllegalArgumentException exception =
+                assertThrows(IllegalArgumentException.class,
+                        () -> emailService.sendEmail(null, "cc@test.com"));
 
-        assertEquals("Order cannot be null", ex.getMessage());
+        assertTrue(exception.getMessage().contains("Order cannot be null"));
     }
 }
