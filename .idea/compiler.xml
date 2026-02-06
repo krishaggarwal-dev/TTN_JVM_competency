@@ -9,5 +9,9 @@
         <module name="Junit" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="maven" target="21" />
+      <module name="maven-2" target="21" />
+    </bytecodeTargetLevel>
   </component>
 </project>
